@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Big Numbers Matching Game</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0d6efd;
+      --success: #198754;
+      --danger: #dc3545;
+      --bg: #f0f4ff;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .game-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .number-box {
+      background: linear-gradient(135deg, #0d6efd, #6610f2);
+      color: white;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      padding: 1.2rem 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 8px 25px rgba(13, 110, 253, 0.35);
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .instruction {
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      color: #333;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+    }
+
+    .match-area {
+      position: relative;
+      min-height: 420px;
+    }
+
+    #svg-lines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .column-title {
+      font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 1rem;
+      color: #0d6efd;
+    }
+
+    .item {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 0.75rem;
+      padding: 0.9rem 1rem;
+      margin-bottom: 0.75rem;
+      font-size: clamp(1rem, 2.2vw, 1.35rem);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .item:hover, .item:active {
+      transform: scale(1.03);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+
+    .item.selected {
+      border-color: var(--primary);
+      background: #e7f1ff;
+      box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.25);
+    }
+
+    .item.matched {
+      border-color: var(--success);
+      background: #d1e7dd;
+      color: #0f5132;
+      cursor: default;
+      opacity: 0.9;
+    }
+
+    .item.wrong {
+      border-color: var(--danger);
+      background: #f8d7da;
+      animation: shake 0.4s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .btn-next {
+      font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+      padding: 0.8rem 2.5rem;
+      border-radius: 50px;
+      font-weight: 700;
+      display: none;
+    }
+
+    .btn-next.show {
+      display: inline-block;
+    }
+
+    .progress-text {
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: #555;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .example-badge {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      background: #6610f2;
+      color: white;
+      padding: 0.4rem 1.2rem;
+      border-radius: 50px;
+      display: inline-block;
+      margin-bottom: 0.8rem;
+    }
+
+    /* Larger touch targets for big screens */
+    @media (min-width: 1200px) {
+      .item {
+        min-height: 70px;
+        font-size: 1.4rem;
+        padding: 1rem 1.2rem;
+      }
+      .number-box {
+        font-size: 3.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="text-center">
+      <div class="example-badge" id="exampleBadge">Example 1 of 3</div>
+    </div>
+
+    <div class="number-box" id="bigNumber">4,582,913,706</div>
+
+    <div class="instruction">
+      Match each <strong>Place Value</strong> (left) with its correct <strong>Value</strong> (right).<br>
+      Tap a place, then tap the matching value. Green = correct!
+    </div>
+
+    <div class="match-area row g-3" id="matchArea">
+      <!-- SVG for lines -->
+      <svg id="svg-lines"></svg>
+
+      <!-- Left column: Place Values -->
+      <div class="col-5 col-md-5">
+        <div class="column-title">Place Value</div>
+        <div id="placesColumn"></div>
+      </div>
+
+      <!-- Spacer for middle -->
+      <div class="col-2 col-md-2 d-none d-md-block"></div>
+
+      <!-- Right column: Values -->
+      <div class="col-5 col-md-5">
+        <div class="column-title">Value</div>
+        <div id="valuesColumn"></div>
+      </div>
+    </div>
+
+    <div class="progress-text" id="progressText">Matched: 0 / 6</div>
+
+    <div class="text-center mt-4">
+      <button class="btn btn-success btn-next" id="nextBtn">Next Example →</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ========== DATA: 3 Examples ==========
+    const examples = [
+      {
+        number: "4,582,913,706",
+        pairs: [
+          { place: "One Milliard", value: "4,000,000,000" },
+          { place: "Hundred Millions", value: "500,000,000" },
+          { place: "Ten Millions", value: "80,000,000" },
+          { place: "Millions", value: "2,000,000" },
+          { place: "Hundred Thousands", value: "900,000" },
+          { place: "Ten Thousands", value: "10,000" }
+        ]
+      },
+      {
+        number: "7,305,148,920",
+        pairs: [
+          { place: "One Milliard", value: "7,000,000,000" },
+          { place: "Hundred Millions", value: "300,000,000" },
+          { place: "Millions", value: "5,000,000" },
+          { place: "Hundred Thousands", value: "100,000" },
+          { place: "Ten Thousands", value: "40,000" },
+          { place: "Hundreds", value: "900" }
+        ]
+      },
+      {
+        number: "2,916,054,387",
+        pairs: [
+          { place: "One Milliard", value: "2,000,000,000" },
+          { place: "Hundred Millions", value: "900,000,000" },
+          { place: "Ten Millions", value: "10,000,000" },
+          { place: "Hundred Thousands", value: "50,000" },
+          { place: "Thousands", value: "4,000" },
+          { place: "Tens", value: "80" }
+        ]
+      }
+    ];
+
+    let currentExample = 0;
+    let selectedPlace = null;
+    let matchedCount = 0;
+    let totalPairs = 0;
+    let lines = []; // store permanent green lines
+    let tempLine = null;
+
+    const placesCol = document.getElementById('placesColumn');
+    const valuesCol = document.getElementById('valuesColumn');
+    const svg = document.getElementById('svg-lines');
+    const bigNumberEl = document.getElementById('bigNumber');
+    const exampleBadge = document.getElementById('exampleBadge');
+    const progressText = document.getElementById('progressText');
+    const nextBtn = document.getElementById('nextBtn');
+    const matchArea = document.getElementById('matchArea');
+
+    // ========== INITIALIZE ==========
+    function loadExample(index) {
+      currentExample = index;
+      const ex = examples[index];
+      bigNumberEl.textContent = ex.number;
+      exampleBadge.textContent = `Example ${index + 1} of 3`;
+      matchedCount = 0;
+      totalPairs = ex.pairs.length;
+      progressText.textContent = `Matched: 0 / ${totalPairs}`;
+      nextBtn.classList.remove('show');
+      selectedPlace = null;
+      lines = [];
+      svg.innerHTML = '';
+
+      // Clear columns
+      placesCol.innerHTML = '';
+      valuesCol.innerHTML = '';
+
+      // Create place items (left)
+      ex.pairs.forEach((pair, i) => {
+        const div = document.createElement('div');
+        div.className = 'item place-item';
+        div.textContent = pair.place;
+        div.dataset.id = i;
+        div.dataset.place = pair.place;
+        div.addEventListener('pointerdown', (e) => onPlaceSelect(e, div));
+        placesCol.appendChild(div);
+      });
+
+      // Create value items (right) - shuffled
+      const shuffled = [...ex.pairs].sort(() => Math.random() - 0.5);
+      shuffled.forEach((pair) => {
+        const div = document.createElement('div');
+        div.className = 'item value-item';
+        div.textContent = pair.value;
+        div.dataset.value = pair.value;
+        // Find original index
+        const originalIndex = ex.pairs.findIndex(p => p.value === pair.value);
+        div.dataset.id = originalIndex;
+        div.addEventListener('pointerdown', (e) => onValueSelect(e, div));
+        valuesCol.appendChild(div);
+      });
+
+      // Redraw lines on resize
+      setTimeout(updateAllLines, 100);
+    }
+
+    // ========== SELECTION LOGIC ==========
+    function onPlaceSelect(e, el) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Ignore if already matched
+      if (el.classList.contains('matched')) return;
+
+      // Deselect previous
+      document.querySelectorAll('.place-item.selected').forEach(p => p.classList.remove('selected'));
+
+      // Select this one
+      el.classList.add('selected');
+      selectedPlace = el;
+    }
+
+    function onValueSelect(e, el) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!selectedPlace || el.classList.contains('matched')) return;
+
+      const placeId = selectedPlace.dataset.id;
+      const valueId = el.dataset.id;
+
+      if (placeId === valueId) {
+        // CORRECT
+        selectedPlace.classList.remove('selected');
+        selectedPlace.classList.add('matched');
+        el.classList.add('matched');
+
+        // Draw permanent green line
+        drawLine(selectedPlace, el, true);
+        matchedCount++;
+        progressText.textContent = `Matched: ${matchedCount} / ${totalPairs}`;
+
+        selectedPlace = null;
+
+        // Check if finished
+        if (matchedCount === totalPairs) {
+          nextBtn.classList.add('show');
+          progressText.textContent = `🎉 Perfect! All matched!`;
+          progressText.style.color = '#198754';
+          progressText.style.fontWeight = '700';
+        }
+      } else {
+        // WRONG - temporary red line + shake
+        el.classList.add('wrong');
+        selectedPlace.classList.add('wrong');
+
+        // Draw temporary red line
+        const redLine = drawLine(selectedPlace, el, false);
+
+        // Remove after short delay
+        setTimeout(() => {
+          el.classList.remove('wrong');
+          selectedPlace.classList.remove('wrong');
+          if (redLine && redLine.parentNode) {
+            redLine.parentNode.removeChild(redLine);
+          }
+          // Keep selection so student can try again
+        }, 800);
+      }
+    }
+
+    // ========== DRAWING LINES ==========
+    function getCenter(el) {
+      const rect = el.getBoundingClientRect();
+      const areaRect = matchArea.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2 - areaRect.left,
+        y: rect.top + rect.height / 2 - areaRect.top
+      };
+    }
+
+    function drawLine(fromEl, toEl, isCorrect) {
+      const from = getCenter(fromEl);
+      const to = getCenter(toEl);
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', from.x);
+      line.setAttribute('y1', from.y);
+      line.setAttribute('x2', to.x);
+      line.setAttribute('y2', to.y);
+      line.setAttribute('stroke', isCorrect ? '#198754' : '#dc3545');
+      line.setAttribute('stroke-width', isCorrect ? '5' : '4');
+      line.setAttribute('stroke-linecap', 'round');
+      if (!isCorrect) {
+        line.setAttribute('stroke-dasharray', '8,6');
+      }
+      svg.appendChild(line);
+
+      if (isCorrect) {
+        lines.push({ line, fromEl, toEl });
+      }
+      return line;
+    }
+
+    function updateAllLines() {
+      // Update positions of permanent green lines (for resize / orientation change)
+      lines.forEach(item => {
+        const from = getCenter(item.fromEl);
+        const to = getCenter(item.toEl);
+        item.line.setAttribute('x1', from.x);
+        item.line.setAttribute('y1', from.y);
+        item.line.setAttribute('x2', to.x);
+        item.line.setAttribute('y2', to.y);
+      });
+    }
+
+    // ========== NEXT BUTTON ==========
+    nextBtn.addEventListener('click', () => {
+      progressText.style.color = '#555';
+      progressText.style.fontWeight = '500';
+      if (currentExample < examples.length - 1) {
+        loadExample(currentExample + 1);
+      } else {
+        // Finished all
+        bigNumberEl.textContent = "🎉 Well Done!";
+        placesCol.innerHTML = '';
+        valuesCol.innerHTML = '';
+        svg.innerHTML = '';
+        exampleBadge.textContent = "All Examples Completed!";
+        progressText.textContent = "You are a Big Numbers expert!";
+        nextBtn.style.display = 'none';
+        document.querySelector('.instruction').textContent = "Great job matching all the place values!";
+      }
+    });
+
+    // Handle window resize / orientation
+    window.addEventListener('resize', () => {
+      setTimeout(updateAllLines, 150);
+    });
+
+    // Prevent scrolling while interacting on touch devices
+    document.addEventListener('touchmove', (e) => {
+      if (e.target.closest('.item')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    // Start
+    loadExample(0);
+  </script>
+</body>
+</html>
