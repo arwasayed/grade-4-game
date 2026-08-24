@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Big Numbers Matching Game</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -13,46 +13,74 @@
       --bg: #f0f4ff;
     }
 
-    body {
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;          /* No scroll bars */
       background: var(--bg);
       font-family: 'Segoe UI', system-ui, sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: none;
+      touch-action: manipulation;
     }
 
     .game-container {
+      height: 100vh;
+      height: 100dvh;            /* Better for mobile browsers */
       max-width: 1400px;
       margin: 0 auto;
-      padding: 1rem;
+      padding: 0.6rem 0.8rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-area {
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .example-badge {
+      font-size: clamp(0.85rem, 1.8vw, 1.15rem);
+      background: #6610f2;
+      color: white;
+      padding: 0.25rem 1rem;
+      border-radius: 50px;
+      display: inline-block;
+      margin-bottom: 0.4rem;
     }
 
     .number-box {
       background: linear-gradient(135deg, #0d6efd, #6610f2);
       color: white;
-      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-size: clamp(1.5rem, 4vw, 2.8rem);
       font-weight: 700;
-      letter-spacing: 0.15em;
-      padding: 1.2rem 2rem;
-      border-radius: 1rem;
-      box-shadow: 0 8px 25px rgba(13, 110, 253, 0.35);
-      text-align: center;
-      margin-bottom: 1.5rem;
+      letter-spacing: 0.12em;
+      padding: 0.6rem 1.2rem;
+      border-radius: 0.8rem;
+      box-shadow: 0 6px 18px rgba(13, 110, 253, 0.3);
+      margin-bottom: 0.5rem;
     }
 
     .instruction {
-      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      font-size: clamp(0.9rem, 1.8vw, 1.25rem);
       color: #333;
-      text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0.5rem;
       font-weight: 500;
+      line-height: 1.3;
     }
 
+    /* Main matching area takes remaining space */
     .match-area {
       position: relative;
-      min-height: 420px;
+      flex: 1;
+      min-height: 0;             /* Important for flex children */
+      display: flex;
+      gap: 0.5rem;
     }
 
     #svg-lines {
@@ -65,43 +93,59 @@
       z-index: 5;
     }
 
+    .column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
     .column-title {
-      font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+      font-size: clamp(1rem, 2vw, 1.35rem);
       font-weight: 700;
       text-align: center;
-      margin-bottom: 1rem;
+      margin-bottom: 0.4rem;
       color: #0d6efd;
+      flex-shrink: 0;
+    }
+
+    .items-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      min-height: 0;
     }
 
     .item {
       background: white;
       border: 3px solid #dee2e6;
-      border-radius: 0.75rem;
-      padding: 0.9rem 1rem;
-      margin-bottom: 0.75rem;
-      font-size: clamp(1rem, 2.2vw, 1.35rem);
+      border-radius: 0.6rem;
+      padding: 0.35rem 0.6rem;
+      font-size: clamp(0.85rem, 1.7vw, 1.2rem);
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-      min-height: 60px;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
       position: relative;
       z-index: 10;
+      min-height: 0;
     }
 
     .item:hover, .item:active {
-      transform: scale(1.03);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     }
 
     .item.selected {
       border-color: var(--primary);
       background: #e7f1ff;
-      box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.25);
+      box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
     }
 
     .item.matched {
@@ -109,24 +153,36 @@
       background: #d1e7dd;
       color: #0f5132;
       cursor: default;
-      opacity: 0.9;
+      opacity: 0.92;
     }
 
     .item.wrong {
       border-color: var(--danger);
       background: #f8d7da;
-      animation: shake 0.4s;
+      animation: shake 0.35s;
     }
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-8px); }
-      75% { transform: translateX(8px); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .footer-area {
+      flex-shrink: 0;
+      text-align: center;
+      padding-top: 0.5rem;
+    }
+
+    .progress-text {
+      font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+      color: #555;
+      margin-bottom: 0.4rem;
     }
 
     .btn-next {
-      font-size: clamp(1.2rem, 2.5vw, 1.6rem);
-      padding: 0.8rem 2.5rem;
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      padding: 0.5rem 1.8rem;
       border-radius: 50px;
       font-weight: 700;
       display: none;
@@ -136,72 +192,47 @@
       display: inline-block;
     }
 
-    .progress-text {
-      font-size: clamp(1rem, 2vw, 1.3rem);
-      color: #555;
-      text-align: center;
-      margin-top: 1rem;
-    }
-
-    .example-badge {
-      font-size: clamp(1rem, 2vw, 1.25rem);
-      background: #6610f2;
-      color: white;
-      padding: 0.4rem 1.2rem;
-      border-radius: 50px;
-      display: inline-block;
-      margin-bottom: 0.8rem;
-    }
-
-    /* Larger touch targets for big screens */
-    @media (min-width: 1200px) {
-      .item {
-        min-height: 70px;
-        font-size: 1.4rem;
-        padding: 1rem 1.2rem;
-      }
-      .number-box {
-        font-size: 3.2rem;
-      }
+    /* Extra small screens */
+    @media (max-height: 600px) {
+      .number-box { font-size: 1.4rem; padding: 0.4rem 0.8rem; }
+      .instruction { font-size: 0.85rem; margin-bottom: 0.3rem; }
+      .item { font-size: 0.8rem; }
+      .column-title { font-size: 0.95rem; }
     }
   </style>
 </head>
 <body>
   <div class="game-container">
-    <div class="text-center">
+    <!-- Header -->
+    <div class="header-area">
       <div class="example-badge" id="exampleBadge">Example 1 of 3</div>
+      <div class="number-box" id="bigNumber">4,582,913,706</div>
+      <div class="instruction">
+        Match each <strong>Place Value</strong> with its correct <strong>Value</strong>.<br>
+        Tap a place → then tap the matching value. Green = correct!
+      </div>
     </div>
 
-    <div class="number-box" id="bigNumber">4,582,913,706</div>
-
-    <div class="instruction">
-      Match each <strong>Place Value</strong> (left) with its correct <strong>Value</strong> (right).<br>
-      Tap a place, then tap the matching value. Green = correct!
-    </div>
-
-    <div class="match-area row g-3" id="matchArea">
-      <!-- SVG for lines -->
+    <!-- Matching Area -->
+    <div class="match-area" id="matchArea">
       <svg id="svg-lines"></svg>
 
-      <!-- Left column: Place Values -->
-      <div class="col-5 col-md-5">
+      <!-- Left: Place Values -->
+      <div class="column">
         <div class="column-title">Place Value</div>
-        <div id="placesColumn"></div>
+        <div class="items-list" id="placesColumn"></div>
       </div>
 
-      <!-- Spacer for middle -->
-      <div class="col-2 col-md-2 d-none d-md-block"></div>
-
-      <!-- Right column: Values -->
-      <div class="col-5 col-md-5">
+      <!-- Right: Values -->
+      <div class="column">
         <div class="column-title">Value</div>
-        <div id="valuesColumn"></div>
+        <div class="items-list" id="valuesColumn"></div>
       </div>
     </div>
 
-    <div class="progress-text" id="progressText">Matched: 0 / 6</div>
-
-    <div class="text-center mt-4">
+    <!-- Footer -->
+    <div class="footer-area">
+      <div class="progress-text" id="progressText">Matched: 0 / 6</div>
       <button class="btn btn-success btn-next" id="nextBtn">Next Example →</button>
     </div>
   </div>
@@ -249,8 +280,7 @@
     let selectedPlace = null;
     let matchedCount = 0;
     let totalPairs = 0;
-    let lines = []; // store permanent green lines
-    let tempLine = null;
+    let lines = [];
 
     const placesCol = document.getElementById('placesColumn');
     const valuesCol = document.getElementById('valuesColumn');
@@ -261,7 +291,6 @@
     const nextBtn = document.getElementById('nextBtn');
     const matchArea = document.getElementById('matchArea');
 
-    // ========== INITIALIZE ==========
     function loadExample(index) {
       currentExample = index;
       const ex = examples[index];
@@ -270,56 +299,47 @@
       matchedCount = 0;
       totalPairs = ex.pairs.length;
       progressText.textContent = `Matched: 0 / ${totalPairs}`;
+      progressText.style.color = '#555';
+      progressText.style.fontWeight = '500';
       nextBtn.classList.remove('show');
       selectedPlace = null;
       lines = [];
       svg.innerHTML = '';
 
-      // Clear columns
       placesCol.innerHTML = '';
       valuesCol.innerHTML = '';
 
-      // Create place items (left)
+      // Place items
       ex.pairs.forEach((pair, i) => {
         const div = document.createElement('div');
         div.className = 'item place-item';
         div.textContent = pair.place;
         div.dataset.id = i;
-        div.dataset.place = pair.place;
         div.addEventListener('pointerdown', (e) => onPlaceSelect(e, div));
         placesCol.appendChild(div);
       });
 
-      // Create value items (right) - shuffled
+      // Value items (shuffled)
       const shuffled = [...ex.pairs].sort(() => Math.random() - 0.5);
       shuffled.forEach((pair) => {
         const div = document.createElement('div');
         div.className = 'item value-item';
         div.textContent = pair.value;
-        div.dataset.value = pair.value;
-        // Find original index
         const originalIndex = ex.pairs.findIndex(p => p.value === pair.value);
         div.dataset.id = originalIndex;
         div.addEventListener('pointerdown', (e) => onValueSelect(e, div));
         valuesCol.appendChild(div);
       });
 
-      // Redraw lines on resize
-      setTimeout(updateAllLines, 100);
+      setTimeout(updateAllLines, 80);
     }
 
-    // ========== SELECTION LOGIC ==========
     function onPlaceSelect(e, el) {
       e.preventDefault();
       e.stopPropagation();
-
-      // Ignore if already matched
       if (el.classList.contains('matched')) return;
 
-      // Deselect previous
       document.querySelectorAll('.place-item.selected').forEach(p => p.classList.remove('selected'));
-
-      // Select this one
       el.classList.add('selected');
       selectedPlace = el;
     }
@@ -327,53 +347,41 @@
     function onValueSelect(e, el) {
       e.preventDefault();
       e.stopPropagation();
-
       if (!selectedPlace || el.classList.contains('matched')) return;
 
       const placeId = selectedPlace.dataset.id;
       const valueId = el.dataset.id;
 
       if (placeId === valueId) {
-        // CORRECT
+        // Correct
         selectedPlace.classList.remove('selected');
         selectedPlace.classList.add('matched');
         el.classList.add('matched');
-
-        // Draw permanent green line
         drawLine(selectedPlace, el, true);
         matchedCount++;
         progressText.textContent = `Matched: ${matchedCount} / ${totalPairs}`;
-
         selectedPlace = null;
 
-        // Check if finished
         if (matchedCount === totalPairs) {
           nextBtn.classList.add('show');
-          progressText.textContent = `🎉 Perfect! All matched!`;
+          progressText.textContent = `Perfect! All matched!`;
           progressText.style.color = '#198754';
           progressText.style.fontWeight = '700';
         }
       } else {
-        // WRONG - temporary red line + shake
+        // Wrong
         el.classList.add('wrong');
         selectedPlace.classList.add('wrong');
-
-        // Draw temporary red line
         const redLine = drawLine(selectedPlace, el, false);
 
-        // Remove after short delay
         setTimeout(() => {
           el.classList.remove('wrong');
           selectedPlace.classList.remove('wrong');
-          if (redLine && redLine.parentNode) {
-            redLine.parentNode.removeChild(redLine);
-          }
-          // Keep selection so student can try again
-        }, 800);
+          if (redLine && redLine.parentNode) redLine.parentNode.removeChild(redLine);
+        }, 700);
       }
     }
 
-    // ========== DRAWING LINES ==========
     function getCenter(el) {
       const rect = el.getBoundingClientRect();
       const areaRect = matchArea.getBoundingClientRect();
@@ -393,21 +401,16 @@
       line.setAttribute('x2', to.x);
       line.setAttribute('y2', to.y);
       line.setAttribute('stroke', isCorrect ? '#198754' : '#dc3545');
-      line.setAttribute('stroke-width', isCorrect ? '5' : '4');
+      line.setAttribute('stroke-width', isCorrect ? '4' : '3.5');
       line.setAttribute('stroke-linecap', 'round');
-      if (!isCorrect) {
-        line.setAttribute('stroke-dasharray', '8,6');
-      }
+      if (!isCorrect) line.setAttribute('stroke-dasharray', '7,5');
       svg.appendChild(line);
 
-      if (isCorrect) {
-        lines.push({ line, fromEl, toEl });
-      }
+      if (isCorrect) lines.push({ line, fromEl, toEl });
       return line;
     }
 
     function updateAllLines() {
-      // Update positions of permanent green lines (for resize / orientation change)
       lines.forEach(item => {
         const from = getCenter(item.fromEl);
         const to = getCenter(item.toEl);
@@ -418,36 +421,24 @@
       });
     }
 
-    // ========== NEXT BUTTON ==========
     nextBtn.addEventListener('click', () => {
-      progressText.style.color = '#555';
-      progressText.style.fontWeight = '500';
       if (currentExample < examples.length - 1) {
         loadExample(currentExample + 1);
       } else {
-        // Finished all
-        bigNumberEl.textContent = "🎉 Well Done!";
+        bigNumberEl.textContent = "Well Done!";
         placesCol.innerHTML = '';
         valuesCol.innerHTML = '';
         svg.innerHTML = '';
         exampleBadge.textContent = "All Examples Completed!";
         progressText.textContent = "You are a Big Numbers expert!";
+        progressText.style.color = '#198754';
         nextBtn.style.display = 'none';
-        document.querySelector('.instruction').textContent = "Great job matching all the place values!";
+        document.querySelector('.instruction').innerHTML = "Great job matching all the place values!";
       }
     });
 
-    // Handle window resize / orientation
-    window.addEventListener('resize', () => {
-      setTimeout(updateAllLines, 150);
-    });
-
-    // Prevent scrolling while interacting on touch devices
-    document.addEventListener('touchmove', (e) => {
-      if (e.target.closest('.item')) {
-        e.preventDefault();
-      }
-    }, { passive: false });
+    window.addEventListener('resize', () => setTimeout(updateAllLines, 100));
+    window.addEventListener('orientationchange', () => setTimeout(updateAllLines, 200));
 
     // Start
     loadExample(0);
